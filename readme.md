@@ -1,160 +1,157 @@
-# Rick and Morty DevOps Task
+# Rick and Morty API
 
-## Step 1: Script
+## Overview
 
-**Objective:**  
+This project fetches data from the [Rick and Morty API](https://rickandmortyapi.com/), filters <B>human</B> characters who are <B>alive</B> and their origin is from <B>Earth</B>, and exposes this data through a RESTful API. The application is containerized with Docker and deployed to a Kubernetes cluster using Minikube.
 
-1. Query “Rick and Morty” API and look for all characters that meets the following conditions:
-  
-- Species is “Human”
-- Status is “Alive”
-- Origin is “Earth”
+## Features
 
-2. Make a list of the results that will include:
+1. **Data Extraction & CSV Generation**
+   - Retrieves characters with:
+     - **Species:** Human
+     - **Status:** Alive
+     - **Origin:** Earth
+   - Generates a CSV with:
+     - Name
+     - Origin
+     - Location
+     - Image Link
 
-- Name
-- Location
-- Image link.
+2. **REST API**
+   - **Endpoints:**
+     - `/healthcheck` - Checks service status.
+     - `/characters` - Returns filtered character data.
+     - `/export` - Exports data to CSV.
 
-3. Write the results to a csv file
+3. **Containerization & Deployment**
+   - **Docker:** Containerizes the application.
+   - **Kubernetes (Minikube):** Deploys using Helm charts.
 
-Script process:
+4. **CI/CD Pipeline**
+   - **GitHub Actions:** Automates the deployment and testing process.
 
-1. Fetch data from the API.
-2. Filter characters based on the conditions.
-3. Save the results in a CSV file with the following fields:
-   - Name
-   - Origin
-   - Location
-   - Image link
+## Requirements
 
-**Example Output CSV:**
+- **Local:**
+  - Python 3.9
+  - Flask, requests, pandas
+- **Containerization & Deployment:**
+  - Docker
+  - Minikube, kubectl, Helm
 
-```
-Name,Origin,Location,Image
-Rick Sanchez,Earth,Earth,https://rickandmortyapi.com/api/character/avatar/1.jpeg
-```
+## Setup
 
-## Step 2: Dockerized App
+### Running Locally
 
-**Objective:** Convert the script into a REST API application.
+1. **Setup Virtual Environment (Optional):**
+    ```sh
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-### Features
+2. **Install Dependencies:**
+    ```sh
+    pip install -r requirements.txt
+    ```
 
-- **REST API Endpoints:**
-  - `/characters`: Returns the filtered characters in JSON format.
-  - `/healthcheck`: Returns the health status of the application.
-  - `/export`: Exports the filtered characters to a CSV file.
+3. **Start Application:**
+    ```sh
+    python app.py
+    ```
+    Access:
+    - [http://localhost:5000/healthcheck](http://localhost:5000/healthcheck)
+    - [http://localhost:5000/characters](http://localhost:5000/characters)
+    - [http://localhost:5000/export](http://localhost:5000/export)
 
-### Dockerization
+### Using Docker
 
-1. Create a `Dockerfile` to containerize the application.
-2. Build and run the Docker image.
+1. **Build Image:**
+    ```sh
+    docker build -t zivhm/rick-and-morty-api:latest .
+    ```
 
-**Commands:**
+2. **Run Container:**
+    ```sh
+    docker run -p 5000:5000 zivhm/rick-and-morty-api:latest
+    ```
+    Access the same endpoints as above.
 
-```bash
-# Build Docker image
-docker build -t rick_and_morty_app .
+### Deploying to Kubernetes (Minikube)
 
-# Run Docker container
-docker run -p 5000:5000 rick_and_morty_app
-```
+1. **Start Minikube:**
+    ```sh
+    minikube start
+    ```
 
-## Step 3: Kubernetes
+2. **Use Minikube’s Docker:**
+    ```sh
+    eval $(minikube docker-env)
+    docker build -t zivhm/rick-and-morty-api:latest .
+    ```
 
-**Objective:** Deploy the Dockerized application to a Kubernetes cluster using minikube.
+3. **Deploy with Helm:**
+    ```sh
+    helm install rick-and-morty-api ./helm
+    ```
 
-### Folder Structure
+4. **Access Application:**
+    - Get Minikube IP:
+      ```sh
+      minikube ip
+      ```
+    - Update `/etc/hosts`:
+      ```
+      <minikube_ip> rickmorty.local
+      ```
+    - Access:
+      - [http://rickmorty.local/healthcheck](http://rickmorty.local/healthcheck)
+      - [http://rickmorty.local/characters](http://rickmorty.local/characters)
+      - [http://rickmorty.local/export](http://rickmorty.local/export)
 
-- `yamls/`:
-  - `Deployment.yaml`: Defines the deployment configuration.
-  - `Service.yaml`: Exposes the application as a service.
-  - `Ingress.yaml`: Configures the ingress for external access.
+## CI/CD Pipeline
 
-### Deployment Steps
+This project uses GitHub Actions to automate the deployment and testing process to a Kubernetes cluster via Minikube. The pipeline is triggered on every push to the `main` branch.
 
-1. Start minikube:
+### GitHub Actions
 
-   ```bash
-   minikube start
-   ```
+The GitHub Actions workflow automates the following tasks:
 
-2. Apply the manifests:
+1. **Code Checkout**: Retrieves the latest code from the repository.
+2. **Docker Build & Setup**: Sets up Docker Buildx and prepares the application Docker image.
+3. **Minikube Setup**: Installs and starts Minikube to create a local Kubernetes cluster.
+4. **Kubernetes Setup**: Installs `kubectl` and configures it to use the Minikube cluster.
+5. **Helm Deployment**: Deploys the application using Helm charts.
+6. **Dependency Installation**: Installs required Python dependencies.
+7. **Test Execution**: Runs tests to ensure that the application is working correctly.
 
-   ```bash
-   kubectl apply -f yamls/
-   ```
+### Workflow
 
-3. Verify the application is running and accessible:
+The workflow is defined in the `.github/workflows/deploy.yml` file and follows these steps:
 
-   ```bash
-   kubectl get pods
-   kubectl get services
-   ```
+1. **Check out Code**: 
+    - The workflow starts by checking out the latest version of the code from the repository.
 
-4. Update minikube IP as a host:
+2. **Set up Docker Buildx**:
+    - Sets up Docker Buildx to enable building multi-platform images.
 
-   ```bash
-   minikube ip
-   ```
+3. **Install Minikube**:
+    - Installs Minikube, the local Kubernetes cluster, and starts it using Docker as the driver.
 
-   then in /etc/hosts add an entry:
+4. **Install kubectl**:
+    - Installs `kubectl`, the Kubernetes command-line tool, and configures it to communicate with the Minikube cluster.
 
-   ```
-   <minikube-ip> rickandmorty.local
-   ```
+5. **Install Helm**:
+    - Installs Helm, the Kubernetes package manager, which is used to manage the deployment.
 
-5. Access the application:
+6. **Configure kubectl for Minikube**:
+    - Configures `kubectl` to use the Minikube context to interact with the local Kubernetes cluster.
 
-   ```
-   http://rickandmorty.local/healthcheak
-   ```
+7. **Deploy with Helm**:
+    - Deploys the application to Kubernetes using Helm charts. If the application is already deployed, it will be upgraded.
 
-## Step 4: Helm
+8. **Install Dependencies**:
+    - Installs the Python dependencies required for the application.
 
-**Objective:** Package the Kubernetes resources as a Helm chart for easy deployment.
+9. **Run Tests**:
+    - Runs automated tests to ensure that the application is working as expected.
 
-### Folder Structure
-
-- `helm/`:
-  - `Chart.yaml`: Contains metadata about the Helm chart.
-  - `values.yaml`: Defines default configurations.
-  - `templates/`: Contains the Kubernetes resource templates.
-
-### Deployment Steps
-
-1. Install the application using Helm:
-
-   ```bash
-   helm install rick-and-morty helm/
-   ```
-
-2. Verify the deployment:
-
-   ```bash
-   helm list
-   ```
-
-### GitHub Actions Workflow with Minikube
-
-This repository includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automates the deployment and testing of the application in a Minikube Kubernetes cluster.
-
-#### Workflow Steps
-1. **Set up Minikube Cluster**:
-   - Installs Minikube, `kubectl`, and Helm.
-   - Starts a Minikube cluster using Docker.
-
-2. **Deploy Application**:
-   - Deploys the application to the Minikube cluster using Helm.
-
-3. **Run Tests**:
-   - Executes the `tests/test_endpoints.py` script to test application endpoints.
-
-#### Workflow Details
-- **setup-cluster**: Prepares the Minikube environment and cluster.
-- **deploy-app**: Deploys the application to the cluster.
-- **test-endpoints**: Verifies the application by running tests.
-
-#### Triggering the Workflow
-The workflow is triggered on every push to the `main` branch. Workflow logs can be viewed in the GitHub Actions tab.
