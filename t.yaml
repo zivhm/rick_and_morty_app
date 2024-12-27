@@ -1,0 +1,57 @@
+name: CI with Minikube
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      
+name: Checkout code
+      uses: actions/checkout@v3
+
+      
+name: Set up Minikube
+      uses: manusa/actions-setup-minikube@v2
+      with:
+        kubernetes-version: '1.25.3'
+        driver: docker
+
+      
+name: Build Docker image
+      run: |# Point Docker CLI to the Minikube Docker daemon
+        eval $(minikube docker-env)
+        docker build -t rickmortyapp:latest .
+
+      
+name: Install Helm
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        helm version
+
+      
+name: Helm install/upgrade
+      run: |
+        helm upgrade --install rickmortyapp ./helm/rickmortyapp --wait
+        kubectl get pods,svc,ingress
+
+      
+name: Test application endpoints
+      run: |# Adjust if your Service is NodePort or if you have an Ingress set up.
+        kubectl port-forward service/rickmortyapp-service 5000:80 &
+        sleep 5
+        echo "Testing /healthcheck..."
+        curl -f http://127.0.0.1:5000/healthcheck
+        echo "Testing /characters..."
+        curl -f http://127.0.0.1:5000/characters
+        echo "All tests passed!"
+
+      
+name: Stop Minikube
+      if: always()
+      run: |
+        minikube stop
