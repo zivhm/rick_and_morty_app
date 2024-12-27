@@ -1,0 +1,29 @@
+replicaCount: 2
+
+image:
+  repository: zivhm/rick-and-morty-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  targetPort: 5000
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+  host: "rickandmorty.local"
+  path: "/"
+
+readinessProbe:
+  path: /healthcheck
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  path: /healthcheck
+  initialDelaySeconds: 10
+  periodSeconds: 30
